@@ -1,10 +1,9 @@
 package com.bivizul.guessthesoccerplayer.ui.start
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bivizul.guessthesoccerplayer.data.RepositoryImpl
-import com.bivizul.guessthesoccerplayer.domain.Resource
+import com.bivizul.guessthesoccerplayer.domain.ERROR_VIEW_MODEL
 import com.bivizul.guessthesoccerplayer.domain.case.GetZovServakaUseCase
 import com.bivizul.guessthesoccerplayer.domain.model.Tilik
 import com.bivizul.guessthesoccerplayer.domain.model.ZovServaka
@@ -21,19 +20,19 @@ class StartViewModel @Inject constructor(repositoryImpl: RepositoryImpl) : ViewM
 
     private val getZovServakaUseCase = GetZovServakaUseCase(repositoryImpl)
 
-    private val _start = MutableStateFlow<Resource<ZovServaka>>(Resource.Success(ZovServaka("")))
-    val start: StateFlow<Resource<ZovServaka>> = _start.asStateFlow()
+    private val _start = MutableStateFlow<ZovServaka>(ZovServaka(""))
+    val start: StateFlow<ZovServaka> = _start.asStateFlow()
 
     fun getZovServaka(tilik: Tilik) {
         viewModelScope.launch(Dispatchers.IO) {
-            _start.emit(Resource.Loading())
-            val response = getZovServakaUseCase(tilik)
-            if (response.isSuccessful) {
-                response.body()?.let { zovPredka ->
-                    _start.emit(Resource.Success(zovPredka))
+            getZovServakaUseCase(tilik).let { response ->
+                if (response.isSuccessful) {
+                    response.body()?.let { zovPredka ->
+                        _start.emit(zovPredka)
+                    }
+                } else {
+                    _start.emit(ZovServaka(ERROR_VIEW_MODEL))
                 }
-            } else {
-                _start.emit(Resource.Error(response.message()))
             }
         }
     }
